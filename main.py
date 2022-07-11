@@ -1,8 +1,10 @@
-import numpy as np
+from unittest import result
+
 import cv2
 import matplotlib.pyplot as plt
+import numpy as np
 
-cam = cv2.VideoCapture(0)
+cam = cv2.VideoCapture(1)
 
 cv2.namedWindow("test")
 
@@ -20,9 +22,10 @@ while True:
     _, otsu = cv2.threshold(blur,40,255,cv2.THRESH_BINARY_INV)
     roi_coordinates = np.argwhere(otsu)
     y, x = np.mean(roi_coordinates, axis=0).astype(int)
-    frame = cv2.circle(frame, (x, y), 7, (0, 180, 0), -1)
+    result = frame.copy()
+    result = cv2.circle(result, (x, y), 7, (0, 180, 0), -1)
 
-    cv2.imshow("original", frame)
+    cv2.imshow("original", result)
     cv2.imshow("s channel", s)
     cv2.imshow("blur", blur)
     cv2.imshow("binary", otsu)
@@ -34,10 +37,14 @@ while True:
         break
     elif k%256 == 32:
         # SPACE pressed
-        img_name = "opencv_frame_{}.png".format(img_counter)
-        cv2.imwrite(img_name, frame)
-        print("{} written!".format(img_name))
-        img_counter += 1
+        cv2.imwrite("img/original.png", frame)
+        cv2.imwrite("img/s_channel.png", s)
+        cv2.imwrite("img/blur.png", blur)
+        cv2.imwrite("img/binary.png", otsu)
+        cv2.imwrite("img/result.png", result)
+    elif k%256 == 99:
+        # c pressed
+        cv2.imwrite("img/ruler.png", frame)
 
 cam.release()
 
