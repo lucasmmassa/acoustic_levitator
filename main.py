@@ -1,13 +1,14 @@
-from unittest import result
+import time
 
 import cv2
 import matplotlib.pyplot as plt
 import numpy as np
+import serial
 
-cam = cv2.VideoCapture(1)
+# arduino = serial.Serial(port='COM3', baudrate=115200, timeout=.1)
+# arduino.write(bytes('+\n', 'utf-8'))
 
-cv2.namedWindow("test")
-
+cam = cv2.VideoCapture(0)
 img_counter = 0
 
 while True:
@@ -44,7 +45,7 @@ while True:
         cv2.imwrite("img/result.png", result)
     elif k%256 == 99:
         # c pressed
-        cv2.imwrite("img/ruler.png", frame)
+        cv2.imwrite("img/ruler3.png", frame)
 
 cam.release()
 
