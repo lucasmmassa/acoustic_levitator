@@ -1,0 +1,4 @@
+0x5 - 0101 - Negative/Negative
+0xa - 1010 - Positivo/Positivo
+0x9 - 1001 - Positivo/Negativo
+0x6 - 0110 - Negativo/Positivo
