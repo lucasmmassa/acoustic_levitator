@@ -1,16 +1,82 @@
+import os
+import threading
 import time
 
 import cv2
 import matplotlib.pyplot as plt
 import numpy as np
 import serial
+import serial.tools.list_ports
 
 # arduino = serial.Serial(port='COM3', baudrate=115200, timeout=.1)
 # arduino.write(bytes('+\n', 'utf-8'))
 
+def send_message(content, delay=0):
+    arduino.write(bytes(content, 'utf-8'))
+    time.sleep(delay)
+    
+def triangular_wave(A):
+    aux = []
+    aux.append(np.arange(A))
+    aux.append(np.arange(A, -A, -1))
+    aux.append(np.arange(-A, 0))
+    return np.hstack(aux)
+
+def thread_func():
+    current = 0
+    time.sleep(10)
+    print("START")
+
+    i = 0
+    size = u.shape[0]
+
+    input_x = []
+    x_values = []
+    y_values = []
+
+    for i in range(size):    
+        value = u[i%size]
+        if value>current:
+            send_message('+\n', 0)
+        elif value<current:
+            send_message('-\n', 0)
+            
+        time.sleep(delta_t)
+        current = value
+        
+        global mutex
+        with mutex:
+            input_x.append(value)
+            x_values.append(x)
+            y_values.append(y)
+    np.save(f'input_tests/amplitude{A}/input.npy', input_x)
+    np.save(f'input_tests/amplitude{A}/x.npy', x_values)
+    np.save(f'input_tests/amplitude{A}/y.npy', y_values)
+    print("FINISHED")
+
+x = None
+y = None
+mutex = threading.Lock()
+
+A = 10
+
+if not os.path.isdir(f'input_tests/amplitude{A}'):
+    os.mkdir(f'input_tests/amplitude{A}')
+
+u = triangular_wave(A)
+f = 0.5
+T = 2*np.pi*f
+delta_t = T/u.shape[0]
+
+
+ports = serial.tools.list_ports.comports()
+first_port = sorted(ports)[0][0]
+arduino = serial.Serial(first_port, 115200, timeout=1)
+if(not arduino.is_open):
+    arduino.open()
+
 cam = cv2.VideoCapture(0)
 img_counter = 0
-
 # fourcc = cv2.VideoWriter_fourcc(*'XVID')
 # out = cv2.VideoWriter('video/new1.avi', fourcc, 20.0, (640, 480))
 
@@ -19,6 +85,9 @@ color = (255, 0, 0)
 thickness = 2
 org = (10, 25)
 font = cv2.FONT_HERSHEY_SIMPLEX
+
+thread = threading.Thread(target=thread_func, args=(), daemon=True)
+thread.start()
 
 while True:
     ret, frame = cam.read()
@@ -31,9 +100,11 @@ while True:
     blur = cv2.GaussianBlur(s,(11,11),0)
     _, otsu = cv2.threshold(blur,40,255,cv2.THRESH_BINARY_INV)
     roi_coordinates = np.argwhere(otsu)
-    y, x = np.mean(roi_coordinates, axis=0).astype(int)
     
-    print(f'X axis position: {x}')
+    with mutex:
+        y, x = np.mean(roi_coordinates, axis=0).astype(int)
+    
+    # print(f'X axis position: {x}')
     
     result = frame.copy()
     result = cv2.circle(result, (x, y), 7, (0, 180, 0), -1)
@@ -69,3 +140,4 @@ cam.release()
 # out.release() 
 
 cv2.destroyAllWindows()
+
