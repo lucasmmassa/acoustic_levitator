@@ -1,6 +1,7 @@
 import os
 import threading
 import time
+from time import perf_counter
 
 import cv2
 import matplotlib.pyplot as plt
@@ -24,7 +25,7 @@ def triangular_wave(A):
 
 def thread_func():
     current = 0
-    time.sleep(10)
+    time.sleep(2)
     print("START")
 
     i = 0
@@ -33,25 +34,40 @@ def thread_func():
     input_x = []
     x_values = []
     y_values = []
-
-    for i in range(size):    
+    
+    total = perf_counter()
+    
+    init = perf_counter()
+    
+    for i in range(size):  
         value = u[i%size]
         if value>current:
-            send_message('+\n', 0)
-        elif value<current:
             send_message('-\n', 0)
+        elif value<current:
+            send_message('+\n', 0)
             
-        time.sleep(delta_t)
         current = value
+        
+        diff = perf_counter() - init
+        
+        time.sleep(delta_t - diff)
         
         global mutex
         with mutex:
             input_x.append(value)
             x_values.append(x)
             y_values.append(y)
-    np.save(f'input_tests/amplitude{A}/input.npy', input_x)
-    np.save(f'input_tests/amplitude{A}/x.npy', x_values)
-    np.save(f'input_tests/amplitude{A}/y.npy', y_values)
+        
+        init = perf_counter()  
+    total = perf_counter() - total
+    print('total time:', total)
+     
+    time.sleep(2)    
+    out.release()
+    np.save(f'input_tests2/amplitude{A}/input.npy', input_x)
+    np.save(f'input_tests2/amplitude{A}/x.npy', x_values)
+    np.save(f'input_tests2/amplitude{A}/y.npy', y_values)
+
     print("FINISHED")
 
 x = None
@@ -60,13 +76,13 @@ mutex = threading.Lock()
 
 A = 10
 
-if not os.path.isdir(f'input_tests/amplitude{A}'):
-    os.mkdir(f'input_tests/amplitude{A}')
+if not os.path.isdir(f'input_tests2/amplitude{A}'):
+    os.mkdir(f'input_tests2/amplitude{A}')
 
 u = triangular_wave(A)
 f = 0.5
-T = 2*np.pi*f
-delta_t = T/u.shape[0]
+T = 1/f
+delta_t = T/(u.shape[0]+1)
 
 
 ports = serial.tools.list_ports.comports()
@@ -77,8 +93,8 @@ if(not arduino.is_open):
 
 cam = cv2.VideoCapture(0)
 img_counter = 0
-# fourcc = cv2.VideoWriter_fourcc(*'XVID')
-# out = cv2.VideoWriter('video/new1.avi', fourcc, 20.0, (640, 480))
+fourcc = cv2.VideoWriter_fourcc(*'XVID')
+out = cv2.VideoWriter(f'input_tests2/amplitude{A}/test.avi', fourcc, 20.0, (640, 480))
 
 fontScale = 1
 color = (255, 0, 0)
@@ -112,7 +128,7 @@ while True:
     cv2.putText(result, f'Coordinates: (x, y) = ({x}, {y})', 
                 org, font, fontScale, color, thickness, cv2.LINE_AA)
     
-    # out.write(result) 
+    out.write(result) 
 
     cv2.imshow("original", result)
     cv2.imshow("s channel", s)
@@ -136,8 +152,6 @@ while True:
         cv2.imwrite("img/ruler3.png", frame)
 
 cam.release()
-
-# out.release() 
 
 cv2.destroyAllWindows()
 
