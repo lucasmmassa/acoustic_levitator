@@ -39,7 +39,8 @@ def thread_func():
     
     init = perf_counter()
     
-    for i in range(size):  
+    # for i in range(size):
+    while (perf_counter()-total) < 30:  
         value = u[i%size]
         if value>current:
             send_message('-\n', 0)
@@ -59,14 +60,15 @@ def thread_func():
             y_values.append(y)
         
         init = perf_counter()  
+        i+= 1
     total = perf_counter() - total
     print('total time:', total)
      
     time.sleep(2)    
     out.release()
-    np.save(f'input_tests2/amplitude{A}/input.npy', input_x)
-    np.save(f'input_tests2/amplitude{A}/x.npy', x_values)
-    np.save(f'input_tests2/amplitude{A}/y.npy', y_values)
+    np.save(f'long_test/amplitude{A}/input.npy', input_x)
+    np.save(f'long_test/amplitude{A}/x.npy', x_values)
+    np.save(f'long_test/amplitude{A}/y.npy', y_values)
 
     print("FINISHED")
 
@@ -76,8 +78,8 @@ mutex = threading.Lock()
 
 A = 10
 
-if not os.path.isdir(f'input_tests2/amplitude{A}'):
-    os.mkdir(f'input_tests2/amplitude{A}')
+if not os.path.isdir(f'long_test/amplitude{A}'):
+    os.mkdir(f'long_test/amplitude{A}')
 
 u = triangular_wave(A)
 f = 0.5
@@ -94,7 +96,7 @@ if(not arduino.is_open):
 cam = cv2.VideoCapture(0)
 img_counter = 0
 fourcc = cv2.VideoWriter_fourcc(*'XVID')
-out = cv2.VideoWriter(f'input_tests2/amplitude{A}/test.avi', fourcc, 20.0, (640, 480))
+out = cv2.VideoWriter(f'long_test/amplitude{A}/test.avi', fourcc, 20.0, (640, 480))
 
 fontScale = 1
 color = (255, 0, 0)
