@@ -10,6 +10,7 @@ import serial
 import serial.tools.list_ports
 
 SEND_MESSAGE_DELAY = 0.5 #seconds
+TOLERANCE = 1
 CAM_INDEX = 1
 FONTSCALE = 1
 COLOR = (255, 0, 0)
@@ -39,7 +40,7 @@ class Controller:
         esp = serial.Serial(first_port, 115200, timeout=1)
         if(not esp.is_open):
             esp.open() 
-        print('ESP ready.')    
+        print('ESP32 ready.')    
         return esp 
     
     
@@ -66,10 +67,10 @@ class Controller:
                 with mutex:
                     error = self.target-self.current_position
                     
-                if error > 0:
+                if error > 0 and abs(error) > TOLERANCE:
                     self.esp.write(bytes('-\n', 'utf-8'))
                     sleep(self.delay)
-                if error < 0:
+                if error < 0 and abs(error) > TOLERANCE:
                     self.esp.write(bytes('+\n', 'utf-8'))
                     sleep(self.delay)
                             
@@ -104,13 +105,23 @@ class Controller:
                     if entry == b'\r':
                         target = int(input_buffer)
                         input_buffer = ''
+                        if target == 0:
+                            target = None
                         with mutex:
                             self.target = target
                         print('Target set to', self.target)
                                              
                     else:
-                        input_buffer += entry.decode('utf-8')
-                        print(f'current buffer {input_buffer}')
+                        char = entry.decode('utf-8')
+                        
+                        if char.isnumeric():
+                            input_buffer += char
+                            print(f'Current buffer: {input_buffer}')
+                        
+                        if char == 'r':
+                            input_buffer = ''
+                            print('Buffer reset.')
+                        
             except ValueError:
                 pass
                             
