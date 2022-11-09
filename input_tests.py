@@ -1,6 +1,8 @@
+import json
 import os
 import threading
 import time
+from glob import glob
 from time import perf_counter
 
 import cv2
@@ -39,6 +41,8 @@ def thread_func():
     
     init = perf_counter()
     
+    global_init = perf_counter()
+    
     # for i in range(size):
     while (perf_counter()-total) < 30:  
         value = u[i%size]
@@ -53,11 +57,19 @@ def thread_func():
         
         time.sleep(delta_t - diff)
         
+        
         global mutex
         with mutex:
             input_x.append(value)
             x_values.append(x)
             y_values.append(y)
+            if (x < -10000):
+                info = {
+                    'duration (s)': perf_counter() - global_init
+                }
+                with open(f'fall_test/freq{f}/duration.json', 'w') as fp:
+                    json.dump(info, fp, indent=4)
+                break
         
         init = perf_counter()  
         i+= 1
@@ -66,25 +78,29 @@ def thread_func():
      
     time.sleep(2)    
     out.release()
-    np.save(f'long_test/amplitude{A}/input.npy', input_x)
-    np.save(f'long_test/amplitude{A}/x.npy', x_values)
-    np.save(f'long_test/amplitude{A}/y.npy', y_values)
+    np.save(f'fall_test/freq{f}/input.npy', input_x)
+    np.save(f'fall_test/freq{f}/x.npy', x_values)
+    np.save(f'fall_test/freq{f}/y.npy', y_values)
 
     print("FINISHED")
+
+global_init = 0
 
 x = None
 y = None
 mutex = threading.Lock()
 
 A = 10
-
-if not os.path.isdir(f'long_test/amplitude{A}'):
-    os.mkdir(f'long_test/amplitude{A}')
+f = 1.5
 
 u = triangular_wave(A)
-f = 0.5
 T = 1/f
 delta_t = T/(u.shape[0]+1)
+
+f = str(f).replace('.', ',')
+
+if not os.path.isdir(f'fall_test/freq{f}'):
+    os.mkdir(f'fall_test/freq{f}')
 
 
 ports = serial.tools.list_ports.comports()
@@ -96,7 +112,7 @@ if(not arduino.is_open):
 cam = cv2.VideoCapture(0)
 img_counter = 0
 fourcc = cv2.VideoWriter_fourcc(*'XVID')
-out = cv2.VideoWriter(f'long_test/amplitude{A}/test.avi', fourcc, 20.0, (640, 480))
+out = cv2.VideoWriter(f'fall_test/freq{f}/test.avi', fourcc, 20.0, (640, 480))
 
 fontScale = 1
 color = (255, 0, 0)
@@ -121,6 +137,7 @@ while True:
     
     with mutex:
         y, x = np.mean(roi_coordinates, axis=0).astype(int)
+           
     
     # print(f'X axis position: {x}')
     

@@ -8,7 +8,7 @@ import serial
 # arduino = serial.Serial(port='COM3', baudrate=115200, timeout=.1)
 # arduino.write(bytes('+\n', 'utf-8'))
 
-cam = cv2.VideoCapture(0)
+cam = cv2.VideoCapture(1)
 img_counter = 0
 
 # fourcc = cv2.VideoWriter_fourcc(*'XVID')
